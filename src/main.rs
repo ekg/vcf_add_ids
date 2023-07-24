@@ -1,7 +1,7 @@
-use vcf::{VCFReader, VCFWriter, VCFError, VCFHeader, VCFRecord, U8Vec};
+use vcf::{VCFReader, VCFWriter, VCFError, U8Vec};
 use flate2::read::MultiGzDecoder;
 use std::fs::File;
-use std::io::{BufReader, BufRead, stdout, Write};
+use std::io::{BufReader, BufRead, stdout};
 use clap::Parser;
 use sha1::{Sha1, Digest};
 
