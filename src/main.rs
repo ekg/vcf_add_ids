@@ -1,7 +1,7 @@
 use vcf::{VCFReader, VCFWriter, VCFError, U8Vec};
 use flate2::read::MultiGzDecoder;
 use std::fs::File;
-use std::io::{BufReader, BufRead, stdout};
+use std::io::{BufReader, BufRead, stdout, Write};
 use clap::Parser;
 use sha1::{Sha1, Digest};
 
@@ -25,16 +25,28 @@ struct Cli {
     prefix: String,
 }
 
+struct Config {
+    input: String,
+    sha1_hash: bool,
+    delim: String,
+    prefix: String,
+    output: Box<dyn Write>,
+}
+
 fn main() -> Result<(), VCFError> {
-
     let cli = Cli::parse();
+    let config = Config {
+        input: cli.input,
+        sha1_hash: cli.sha1_hash,
+        delim: cli.delim,
+        prefix: cli.prefix,
+        output: Box::new(stdout()),
+    };
+    modify_ids(config)
+}
 
-    let use_hash_id = cli.sha1_hash;
-    let delim = cli.delim;
-    let prefix = cli.prefix;
-
-    // copy cli.input into filenam
-    let filename = cli.input;
+fn modify_ids(config: Config) -> Result<(), VCFError> {
+    let filename = config.input;
     let file = File::open(filename.clone())?;
     let buf_reader: Box<dyn BufRead> = if filename.ends_with(".gz") {
         Box::new(BufReader::new(MultiGzDecoder::new(file)))
@@ -44,7 +56,7 @@ fn main() -> Result<(), VCFError> {
 
     let mut reader = VCFReader::new(buf_reader)?;
     let header = reader.header().clone();
-    let mut writer = VCFWriter::new(stdout(), &header)?;
+    let mut writer = VCFWriter::new(config.output, &header)?;
 
     // prepare VCFRecord object
     let mut vcf_record = reader.empty_record();
@@ -55,14 +67,14 @@ fn main() -> Result<(), VCFError> {
         // concatenate the alternative alleles into a string, separated by ,
         let alternative = vcf_record.alternative.iter().map(|x| std::str::from_utf8(x)).collect::<Result<Vec<&str>, _>>()?.join(",");
         let reference = std::str::from_utf8(&vcf_record.reference)?.to_string();
-        let mut new_id = format!("{}{}{}{}{}{}{}", chrom, delim, pos, delim, reference, delim, alternative);
-        if use_hash_id {
+        let mut new_id = format!("{}{}{}{}{}{}{}", chrom, config.delim, pos, config.delim, reference, config.delim, alternative);
+        if config.sha1_hash {
             let mut hasher = Sha1::new();
             hasher.update(new_id.as_bytes());
             // take id as a string that's the first 4 bytes of the hash
             new_id = hasher.finalize().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>();
         }
-        new_id = format!("{}{}", prefix, new_id);
+        new_id = format!("{}{}", config.prefix, new_id);
         vcf_record.id = vec![U8Vec::from(new_id.as_bytes())];
         writer.write_record(&vcf_record)?;
     }
@@ -70,3 +82,21 @@ fn main() -> Result<(), VCFError> {
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_modify_ids() {
+        let config = Config {
+            input: "./test/z.vcf.gz".to_string(),
+            sha1_hash: false,
+            delim: "_".to_string(),
+            prefix: "".to_string(),
+            // write to /dev/null
+            output: Box::new(File::create("/dev/null").unwrap()),
+        };
+        let result = modify_ids(config);
+        assert!(result.is_ok());
+    }
+}
