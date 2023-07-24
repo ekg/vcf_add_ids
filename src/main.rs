@@ -46,8 +46,8 @@ fn main() -> Result<(), VCFError> {
     while reader.next_record(&mut vcf_record)? {
         let chrom = std::str::from_utf8(&vcf_record.chromosome)?;
         let pos = vcf_record.position.to_string();
-        // as a string
-        let alternative = std::str::from_utf8(vcf_record.alternative.first().unwrap())?.to_string();
+        // concatenate the alternative alleles into a string, separated by ,
+        let alternative = vcf_record.alternative.iter().map(|x| std::str::from_utf8(x)).collect::<Result<Vec<&str>, _>>()?.join(",");
         let reference = std::str::from_utf8(&vcf_record.reference)?.to_string();
         let mut new_id = format!("{}{}{}{}{}{}{}", chrom, delim, pos, delim, reference, delim, alternative);
         if use_hash_id {
