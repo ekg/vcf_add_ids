@@ -9,7 +9,7 @@ documentation = "https://docs.rs/my_crate"
 repository = "https://github.com/ekg/vcf_add_ids"
 readme = "README.md"
 keywords = ["genomics", "vcf"]
-categories = ["bioinformatics"]
+categories = ["science"]
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
