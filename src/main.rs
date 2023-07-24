@@ -11,12 +11,18 @@ use sha1::{Sha1, Digest};
 #[command(version = "0.1")]
 #[command(about = "Sets IDs on records using the position and alleles to define the ID.", long_about = None)]
 struct Cli {
+    /// input VCF file
     #[arg(short,long)]
     input: String,
+    /// take the first 4 bytes of a sha1 hash of the record pos/ref/alt as the id
     #[arg(short,long)]
-    sha1_hash: bool, // use a hash value instead of the position and alleles
+    sha1_hash: bool,
+    /// use this delimiter
     #[arg(short,long,default_value = "_")]
     delim: String, // delimiter for the ID field
+    /// a prefix for the ids
+    #[arg(short,long,default_value = "")]
+    prefix: String,
 }
 
 fn main() -> Result<(), VCFError> {
@@ -24,8 +30,8 @@ fn main() -> Result<(), VCFError> {
     let cli = Cli::parse();
 
     let use_hash_id = cli.sha1_hash;
-
     let delim = cli.delim;
+    let prefix = cli.prefix;
 
     // copy cli.input into filenam
     let filename = cli.input;
@@ -56,6 +62,7 @@ fn main() -> Result<(), VCFError> {
             // take id as a string that's the first 4 bytes of the hash
             new_id = hasher.finalize().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>();
         }
+        new_id = format!("{}{}", prefix, new_id);
         vcf_record.id = vec![U8Vec::from(new_id.as_bytes())];
         writer.write_record(&vcf_record)?;
     }
