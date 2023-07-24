@@ -2,8 +2,14 @@
 name = "vcf_add_ids"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Erik Garrison <erik.garrison@gmail.com>"]
+description = "A description of my crate"
+license = "MIT"
+documentation = "https://docs.rs/my_crate"
+repository = "https://github.com/ekg/vcf_add_ids"
+readme = "README.md"
+keywords = ["genomics", "vcf"]
+categories = ["bioinformatics"]
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
